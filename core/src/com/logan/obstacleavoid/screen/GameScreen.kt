@@ -1,8 +1,8 @@
 package com.logan.obstacleavoid.screen
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.viewport.Viewport
 import com.logan.obstacleavoid.assest.AssetPaths
 import com.logan.obstacleavoid.config.DifficultyLevel
 import com.logan.obstacleavoid.config.GameConfig
+import com.logan.obstacleavoid.entity.Bomb
 import com.logan.obstacleavoid.entity.Obstacle
 import com.logan.obstacleavoid.entity.Player
 import com.logan.obstacleavoid.utils.*
@@ -30,7 +31,10 @@ class GameScreen : Screen {
     private lateinit var batch : SpriteBatch
     private lateinit var uiFont : BitmapFont
     private var obstacleTimer = 0f
+    private var bombTimer = 0f
+    private var countDown = 5f
     private val obstacles = GdxArray<Obstacle>()
+    private val bombs = GdxArray<Bomb>()
     private var lives = GameConfig.INITIAL_LIVES
     private val layout = GlyphLayout()
     private val padding = 20f
@@ -38,10 +42,9 @@ class GameScreen : Screen {
     private var scoreTimer = 0f
     private var score = 0
     private var displayScore = 0
-    private var difficultyLevel = DifficultyLevel.EASY
-
-    private val gameOver
-        get() = lives <= 0
+    private var difficultyLevel = DifficultyLevel.HARD
+    private var gameTimer = GameConfig.GAME_MAX_TIME
+    private var gameOver = false
 
     override fun show() {
         camera = OrthographicCamera()
@@ -72,20 +75,28 @@ class GameScreen : Screen {
         debugCameraController.handleDebugInput()
         debugCameraController.applyTo(camera)
 
-        if(!gameOver) update(delta)
-
-        clearScreen()
-
-        renderer.projectionMatrix = camera.combined
-
-        renderer.use {
-            player.drawDebug(renderer)
-            obstacles.forEach { it.drawDebug(renderer) }
+        if (gameOver && countDown <= 0){
+            score = 0
+            gameOver = false
         }
+
+        if(!gameOver && countDown < 0) {
+            update(delta)
+            clearScreen()
+
+            renderer.projectionMatrix = camera.combined
+
+            renderer.use {
+                player.drawDebug(renderer)
+                obstacles.forEach { it.drawDebug(renderer) }
+                bombs.forEach { it.drawDebug(renderer) }
+            }
+
+        }else clearScreen()
 
         renderUi()
 
-        viewport.drawGrid(renderer)
+//        viewport.drawGrid(renderer)
     }
 
     private fun renderUi() {
@@ -94,17 +105,44 @@ class GameScreen : Screen {
 
         batch.use {
             // draw lives
-            val livesText = "LIVES: $lives"
-            layout.setText(uiFont, livesText)
-            uiFont.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
 
-            // draw score
-            scoreText = "SCORE: $score"
-            layout.setText(uiFont, scoreText)
-            uiFont.draw(batch, layout,
-                    GameConfig.HUD_WIDTH - layout.width - padding,
-                    GameConfig. HUD_HEIGHT - layout.height
-            )
+            if(countDown >= -1){
+                countDown -= Gdx.graphics.deltaTime
+                val livesText: String
+                if(countDown >= 0) livesText = "" + (countDown.toInt()+1)
+                else livesText = "GO"
+                layout.setText(uiFont, livesText)
+                uiFont.draw(batch, layout, 220f, 400f)
+                layout.setText(uiFont, "STARTING IN")
+                uiFont.draw(batch, layout, 130f,  500f )
+                if(gameOver) {
+                    layout.setText(uiFont, "Final Score: $score")
+                    uiFont.draw(batch, layout, 130f,  600f )
+                    layout.setText(uiFont, "GAME OVER")
+                    uiFont.draw(batch, layout, 150f,  700f )
+
+                }
+            }else{
+                if(gameTimer >= 0) {
+                    gameTimer -= Gdx.graphics.deltaTime
+
+                    val livesText = "Time: ${gameTimer.toInt()+1}"
+                    layout.setText(uiFont, livesText)
+                    uiFont.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
+                }else{
+                    val livesText = "[GAME OVER] TOTAL "
+                    layout.setText(uiFont, livesText)
+                    uiFont.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
+                }
+
+                // draw score
+                scoreText = "SCORE: $score"
+                layout.setText(uiFont, scoreText)
+                uiFont.draw(batch, layout,
+                        GameConfig.HUD_WIDTH - layout.width - padding,
+                        GameConfig. HUD_HEIGHT - layout.height
+                )
+            }
         }
     }
 
@@ -113,13 +151,45 @@ class GameScreen : Screen {
         player.update()
         blockPlayerFromLeavingTheWorld()
 
-        updateObstacles()
+        updateGameObjects()
+        endGame(delta)
+
         createNewObstacle(delta)
-        updateScore(delta)
+        createNewBomb(delta)
 //        updateDisplayScore(delta)
 
         if(isPlayerCollidingWithObstacle()){
-            lives--
+            score += 50
+        }
+
+        if(isPlayerCollidingWithBomb()){
+            score -= 100
+        }
+    }
+
+    private fun isPlayerCollidingWithBomb(): Boolean {
+        bombs.forEach {
+            if(!it.hit && it.isColliding(player)){
+                player.hit = true
+                return true
+            }else player.hit = false
+        }
+
+        return false
+    }
+
+    private fun createNewBomb(delta: Float) {
+        bombTimer += delta
+
+        if(countDown < 0 && bombTimer >= GameConfig.BOMB_SPAWN_TIME){
+            bombTimer = 0f // reset timer
+
+            val obstacleX = MathUtils.random(0f, GameConfig.WORLD_WIDTH)
+            val bomb = Bomb()
+            bomb.setPosition(obstacleX, GameConfig.WORLD_HEIGHT)
+            bomb.ySpeed = difficultyLevel.obstacleSpeed
+
+            bombs.add(bomb)
         }
     }
 
@@ -137,33 +207,42 @@ class GameScreen : Screen {
 
     }
 
-    private fun updateScore(delta: Float) {
+    private fun endGame(delta: Float) {
         scoreTimer += delta
 
-        if(scoreTimer >= GameConfig.SCORE_MAX_TIME){
+        if(scoreTimer >= GameConfig.GAME_MAX_TIME+1){
+            obstacleTimer = 0f
+            bombTimer = 0f
+            countDown = 10f
+            scoreText = "SCORE: $score"
             scoreTimer = 0f
-            score += 5
+            gameTimer = GameConfig.GAME_MAX_TIME
+            gameOver = true
         }
     }
 
     private fun isPlayerCollidingWithObstacle(): Boolean {
         obstacles.forEach {
             if(!it.hit && it.isColliding(player)){
+                player.hit = true
                 return true
-            }
+            }else player.hit = false
         }
 
         return false
     }
 
-    private fun updateObstacles() {
+    private fun updateGameObjects() {
         obstacles.forEach{ it.update() }
+        bombs.forEach{ it.update() }
     }
+
+
 
     private fun createNewObstacle(delta: Float) {
         obstacleTimer += delta
 
-        if(obstacleTimer >= GameConfig.OBSTACLE_SPAWN_TIME){
+        if(countDown < 0 && obstacleTimer >= GameConfig.OBSTACLE_SPAWN_TIME){
             obstacleTimer = 0f // reset timer
 
             val obstacleX = MathUtils.random(0f, GameConfig.WORLD_WIDTH)

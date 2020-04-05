@@ -3,13 +3,8 @@ package com.logan.obstacleavoid.entity
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Circle
-import com.badlogic.gdx.math.Intersector
-import com.logan.obstacleavoid.utils.circle
-import javax.swing.Renderer
 
-
-class Obstacle() : GameObjectBase() {
-
+class Bomb() : GameObjectBase() {
     companion object {
         // == constants ==
         const val BOUNDS_RADIUS = 0.4f
@@ -25,10 +20,12 @@ class Obstacle() : GameObjectBase() {
         val overlaps = gameObject is Player && super.isColliding(gameObject)
         hit = overlaps
         return overlaps
+        return false
     }
 
+
     override fun drawDebug(renderer: ShapeRenderer) {
-        renderer.color = Color.GREEN//also red
+        renderer.color = Color.BLUE
         if(!hit)super.drawDebug(renderer)
     }
 
@@ -38,6 +35,5 @@ class Obstacle() : GameObjectBase() {
     fun update() {
         y -= ySpeed
     }
-
 
 }

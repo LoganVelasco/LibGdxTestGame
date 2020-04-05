@@ -29,7 +29,7 @@ abstract class GameObjectBase {
         this.y = y
     }
 
-    fun drawDebug(renderer: ShapeRenderer) = renderer.circle(bounds)
+   open fun drawDebug(renderer: ShapeRenderer) = renderer.circle(bounds)
 
     // == private functions ==
     private fun updateBounds() = bounds.setPosition(x, y)

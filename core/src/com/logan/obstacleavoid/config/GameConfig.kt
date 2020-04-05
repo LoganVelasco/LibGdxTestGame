@@ -2,6 +2,7 @@ package com.logan.obstacleavoid.config
 
 object GameConfig {
 
+    const val BOMB_SPAWN_TIME = 1.05f
     const val WIDTH = 480 // pixels - desktop only
     const val HEIGHT = 800 // pixels - desktop only
 
@@ -18,7 +19,7 @@ object GameConfig {
 
     const val INITIAL_LIVES = 10
 
-    const val SCORE_MAX_TIME = 1.25f
+    const val GAME_MAX_TIME = 60f
 
     const val EASY_OBSTACLE_SPEED = 0.1f
     const val MEDIUM_OBSTACLE_SPEED = 0.15f
