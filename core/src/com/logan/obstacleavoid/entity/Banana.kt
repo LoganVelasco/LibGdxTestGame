@@ -8,7 +8,7 @@ import com.logan.obstacleavoid.utils.circle
 import javax.swing.Renderer
 
 
-class Obstacle() : GameObjectBase(), Pool.Poolable {
+class Banana() : GameObjectBase(), Pool.Poolable {
 
     companion object {
         // == constants ==
@@ -17,6 +17,8 @@ class Obstacle() : GameObjectBase(), Pool.Poolable {
     }
 
     var hit = false
+
+    val amountOfBananas = 1
 
     var ySpeed = .1f
 

@@ -1,8 +1,7 @@
-package com.logan.obstacleavoid.screen
+package com.logan.obstacleavoid.screen.game
 
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -10,7 +9,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.badlogic.gdx.utils.viewport.Viewport
-import com.logan.obstacleavoid.assest.AssetPaths
+import com.logan.obstacleavoid.assets.AssetPaths
 import com.logan.obstacleavoid.config.DifficultyLevel
 import com.logan.obstacleavoid.config.GameConfig
 import com.logan.obstacleavoid.entity.Obstacle
@@ -18,7 +17,8 @@ import com.logan.obstacleavoid.entity.Player
 import com.logan.obstacleavoid.utils.*
 import com.logan.obstacleavoid.utils.debug.DebugCameraController
 
-class GameScreen : Screen {
+@Deprecated("This shit is old, use Game Screen", ReplaceWith("GameScreen"))
+class GameScreenOld : Screen {
 
     private lateinit var camera: OrthographicCamera
     private lateinit var viewport: Viewport
@@ -79,8 +79,7 @@ class GameScreen : Screen {
         renderer.projectionMatrix = camera.combined
 
         renderer.use {
-            player.drawDebug(renderer)
-            obstacles.forEach { it.drawDebug(renderer) }
+
         }
 
         renderUi()
@@ -110,7 +109,6 @@ class GameScreen : Screen {
 
     private fun update(delta: Float) {
         // update game world
-        player.update()
         blockPlayerFromLeavingTheWorld()
 
         updateObstacles()

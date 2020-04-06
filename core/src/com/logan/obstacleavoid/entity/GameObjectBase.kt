@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Intersector
 import com.logan.obstacleavoid.utils.circle
 
 abstract class GameObjectBase {
+
     // == public properties ==
     var x: Float = 0f
         set(value) {
@@ -19,6 +20,23 @@ abstract class GameObjectBase {
             updateBounds()
         }
 
+    var width = 1f
+        set(value) {
+            field = value
+            updateBounds()
+        }
+
+    var height = 1f
+        set(value) {
+            field = value
+            updateBounds()
+        }
+
+    fun setSize(width: Float, height : Float){
+        this.height = height
+        this.width = width
+    }
+
     // open to have default, abstract for none
     abstract val bounds : Circle
 
@@ -29,8 +47,7 @@ abstract class GameObjectBase {
         this.y = y
     }
 
-    fun drawDebug(renderer: ShapeRenderer) = renderer.circle(bounds)
-
     // == private functions ==
-    private fun updateBounds() = bounds.setPosition(x, y)
+    private fun updateBounds() = bounds.setPosition(x + width/2, y + height/2)
+
 }
