@@ -8,7 +8,7 @@ import com.logan.obstacleavoid.utils.circle
 import javax.swing.Renderer
 
 
-class Obstacle() : GameObjectBase(), Pool.Poolable {
+class Bomb() : GameObjectBase(), Pool.Poolable {
 
     companion object {
         // == constants ==

@@ -6,6 +6,7 @@ import com.badlogic.gdx.utils.Pools
 import com.logan.obstacleavoid.config.DifficultyLevel
 import com.logan.obstacleavoid.config.GameConfig
 import com.logan.obstacleavoid.entity.Banana
+import com.logan.obstacleavoid.entity.Bomb
 import com.logan.obstacleavoid.entity.Player
 import com.logan.obstacleavoid.utils.*
 
@@ -18,11 +19,18 @@ class GameController {
 
     private val startPlayerX = (GameConfig.WORLD_WIDTH - Player.SIZE) / 2f
     private val startPlayerY = Player.SIZE
-    private var obstacleTimer = 0f
-    private var scoreTimer = 0f
-    private var difficultyLevel = DifficultyLevel.EASY
+
+    private var difficultyLevel = "EASY"
+    private var difficultyProperties = DifficultyLevel(difficultyLevel)
+
+    private var bombTimer = 0f
+    private var bananaTimer = 0f
+
+    var countDown = GameConfig.COUNTDOWN
+    var gameTimer = GameConfig.MAX_GAME_TIME
 
     val bananas = GdxArray<Banana>()
+    val bombs = GdxArray<Bomb>()
 
     var player = Player()
         private set
@@ -33,10 +41,11 @@ class GameController {
     var lives = GameConfig.INITIAL_LIVES
         private set
 
-    val gameOver
-        get() = lives <= 0
+    var gameOver = false
+//        get() = lives <= 0
 
-    private val obstaclePool = Pools.get(Banana::class.java, 20)
+    private val bananaPool = Pools.get(Banana::class.java, 20)
+    private val bombPool = Pools.get(Bomb::class.java, 20)
 
     init {
         // position player
@@ -46,8 +55,11 @@ class GameController {
 
 
     fun update(delta: Float) {
-        if(gameOver){
+        if(countDown > 0) {
             return
+        }
+        if(gameOver){
+            restartGame()
         }
 
         var xSpeed = 0f
@@ -62,22 +74,36 @@ class GameController {
         blockPlayerFromLeavingTheWorld()
 
         createNewBanana(delta)
+        createNewBomb(delta)
         updateBananas()
+        updateBombs()
         removeOldBananas()
+        removeOldBombs()
 
-//        updateDisplayScore(delta)
 
         handleObjectCollisions()
-
+        if(gameTimer <=0){
+            gameOver = true
+            countDown = 5f
+            restartObjects()
+        }
     }
 
-    private fun restart() {
-        obstaclePool.freeAll(bananas)
+    private fun restartGame(){
+        gameOver = false
+        gameTimer = GameConfig.MAX_GAME_TIME
+        score = 0
+    }
+
+    private fun restartObjects() {
+        bananaPool.freeAll(bananas)
         bananas.clear()
+        bombPool.freeAll(bombs)
+        bombs.clear()
         player.setPosition(startPlayerX, startPlayerY)
     }
 
-    private fun updateDisplayScore(delta: Float) {
+//    private fun updateDisplayScore(delta: Float) {
 //        if(displayScore < score){
 //            val newPoints = score - displayScore
 //            scoreText = "Score: $displayScore + $newPoints"
@@ -88,8 +114,7 @@ class GameController {
 //            scoreText = "Score: $score"
 //            renderUi()
 //        }
-
-    }
+//    }
 
 //    private fun updateScore(delta: Float) {
 //        scoreTimer += delta
@@ -109,9 +134,15 @@ class GameController {
             }
         }
 
+        bombs.forEach {
+            if(!it.hit && it.isColliding(player)){
+                hit = true
+                score -= 100
+            }
+        }
+
         if(hit){
             log.debug("collision detected")
-
         }
 
     }
@@ -120,19 +151,39 @@ class GameController {
         bananas.forEach{ it.update() }
     }
 
+    private fun updateBombs() {
+        bombs.forEach{ it.update() }
+    }
+
     private fun createNewBanana(delta: Float) {
-        obstacleTimer += delta
+        bananaTimer += delta
 
-        if(obstacleTimer >= GameConfig.OBSTACLE_SPAWN_TIME){
-            obstacleTimer = 0f // reset timer
+        if(bananaTimer >= difficultyProperties.getBananaSpawn()){
+            bananaTimer = 0f // reset timer
 
-            val obstacleX = MathUtils.random(0f, GameConfig.WORLD_WIDTH - Banana.SIZE)
-            val obstacle = obstaclePool.obtain()
-            obstacle.setPosition(obstacleX, GameConfig.WORLD_HEIGHT)
-            obstacle.setSize(Banana.SIZE, Banana.SIZE)
-            obstacle.ySpeed = difficultyLevel.obstacleSpeed
+            val bananaX = MathUtils.random(0f, GameConfig.WORLD_WIDTH - Banana.SIZE)
+            val banana = bananaPool.obtain()
+            banana.setPosition(bananaX, GameConfig.WORLD_HEIGHT)
+            banana.setSize(Banana.SIZE, Banana.SIZE)
+            banana.ySpeed = difficultyProperties.getBananaSpeed()
 
-            bananas.add(obstacle)
+            bananas.add(banana)
+        }
+    }
+
+    private fun createNewBomb(delta: Float) {
+        bombTimer += delta
+
+        if(bombTimer >= difficultyProperties.getBombSpawn()){
+            bombTimer = 0f // reset timer
+
+            val bombX = MathUtils.random(0f, GameConfig.WORLD_WIDTH - Bomb.SIZE)
+            val bomb = bombPool.obtain()
+            bomb.setPosition(bombX, GameConfig.WORLD_HEIGHT)
+            bomb.setSize(Bomb.SIZE, Bomb.SIZE)
+            bomb.ySpeed = difficultyProperties.getBombSpeed()
+
+            bombs.add(bomb)
         }
     }
 
@@ -140,11 +191,23 @@ class GameController {
         if(bananas.isNullOrEmpty())return
 
         val first: Banana = bananas.first()
-        val minBananaY = -Banana.SIZE
+        val minBananaY = 0f
 
         if(first.y < minBananaY){
-            obstaclePool.free(first)
+            bananaPool.free(first)
             bananas.removeValue(first, true)
+        }
+    }
+
+    private fun removeOldBombs() {
+        if(bombs.isNullOrEmpty())return
+ 
+        val first: Bomb = bombs.first()
+        val minBombY = 0f
+
+        if(first.y < minBombY){
+            bombPool.free(first)
+            bombs.removeValue(first, true)
         }
     }
 

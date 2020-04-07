@@ -13,7 +13,8 @@ import com.badlogic.gdx.utils.viewport.FitViewport
 import com.logan.obstacleavoid.assets.AssetDescriptors
 import com.logan.obstacleavoid.assets.RegionNames
 import com.logan.obstacleavoid.config.GameConfig
-import com.logan.obstacleavoid.entity.Obstacle
+import com.logan.obstacleavoid.entity.Banana
+import com.logan.obstacleavoid.entity.Bomb
 import com.logan.obstacleavoid.entity.Player
 import com.logan.obstacleavoid.utils.*
 import com.logan.obstacleavoid.utils.debug.DebugCameraController
@@ -43,7 +44,7 @@ class GameRenderer(private val controller: GameController,
     private val gameplayAtlas = assetManager[AssetDescriptors.GAMEPLAY]
     private val playerTexture = gameplayAtlas[RegionNames.PLAYER]
     private val bananaTexture = gameplayAtlas[RegionNames.BANANA]
-    private val obstacleTexture = gameplayAtlas[RegionNames.OBSTACLE]
+    private val bombTexture = gameplayAtlas[RegionNames.BOMB]
     private val backgroundTexture = gameplayAtlas[RegionNames.BACKGROUND]
 
     fun render(delta: Float) {
@@ -89,7 +90,13 @@ class GameRenderer(private val controller: GameController,
                 controller.bananas
                         .filter { !it.hit }
                         .forEach {
-                            batch.draw(bananaTexture, it.x, it.y, Obstacle.SIZE, Obstacle.SIZE)
+                            batch.draw(bananaTexture, it.x, it.y, Banana.SIZE, Banana.SIZE)
+                        }
+
+                controller.bombs
+                        .filter { !it.hit }
+                        .forEach {
+                            batch.draw(bombTexture, it.x, it.y, Bomb.SIZE, Bomb.SIZE)
                         }
             }
         }
@@ -122,10 +129,15 @@ class GameRenderer(private val controller: GameController,
                         renderer.x(it.bounds.x, it.bounds.y, .1f)
                         renderer.circle(it.bounds)
                     }
-        }
 
+            controller.bombs
+                .filter { !it.hit }
+                .forEach {
+                    renderer.x(it.bounds.x, it.bounds.y, .1f)
+                    renderer.circle(it.bounds)
+                }
     }
-
+}
     private fun renderUi() {
         uiViewport.apply()
 
@@ -133,17 +145,55 @@ class GameRenderer(private val controller: GameController,
 
         batch.use {
             // draw lives
-            val livesText = "LIVES: ${controller.lives}"
-            layout.setText(font, livesText)
-            font.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
+//            val livesText = "LIVES: ${controller.lives}"
+//            layout.setText(font, livesText)
+//            font.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
 
-            // draw score
-            val scoreText = "SCORE: ${controller.score}"
-            layout.setText(font, scoreText)
-            font.draw(batch, layout,
-                    GameConfig.HUD_WIDTH - layout.width - padding,
-                    GameConfig. HUD_HEIGHT - layout.height
-            )
+
+
+            if(controller.countDown >= -1){
+                    controller.countDown -= Gdx.graphics.deltaTime
+                    val countDownText: String
+                    var startingText = ""
+                    if(controller.countDown >= 0){
+                        countDownText = "" + (controller.countDown.toInt()+1)
+                        startingText = "STARTING IN"
+                    }
+                    else{
+                        countDownText = "GO"
+                        startingText = ""
+                    }
+                    layout.setText(font, countDownText)
+                    font.draw(batch, layout, GameConfig.WIDTH /2f - layout.width/2f ,   GameConfig.HEIGHT/2f)
+                    layout.setText(font, startingText)
+                    font.draw(batch, layout, GameConfig.WIDTH /2f - layout.width/2f ,  GameConfig.HEIGHT/2f + padding * 2.5f)
+                    if(controller.gameOver) {
+                        layout.setText(font, "Final Score: ${controller.score}")
+                        font.draw(batch, layout, GameConfig.WIDTH /2f - layout.width/2f ,  GameConfig.HEIGHT/2f + padding * 6f + layout.height)
+                        layout.setText(font, "GAME OVER")
+                        font.draw(batch, layout, GameConfig.WIDTH /2f - layout.width/2f ,  GameConfig.HEIGHT/2f + padding * 8.5f+ layout.height)
+                    }
+            }else{
+                    if(controller.gameOver) {
+                        val livesText = "[GAME OVER]"
+                        layout.setText(font, livesText)
+                        font.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
+                    }else{
+                        controller.gameTimer -= Gdx.graphics.deltaTime
+
+                        val livesText = "Time: ${controller.gameTimer.toInt()+1}"
+                        layout.setText(font, livesText)
+                        font.draw(batch, layout, padding, GameConfig.HUD_HEIGHT - layout.height)
+                    }
+
+                // draw score
+                val scoreText = "SCORE: ${controller.score}"
+                layout.setText(font, scoreText)
+                font.draw(batch, layout,
+                        GameConfig.HUD_WIDTH - layout.width - padding,
+                        GameConfig. HUD_HEIGHT - layout.height
+                )
+            }
         }
     }
 
