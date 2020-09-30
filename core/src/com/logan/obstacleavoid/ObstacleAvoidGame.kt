@@ -28,6 +28,7 @@ class ObstacleAvoidGame : Game() {
     override fun dispose() {
         super.dispose()
         assetManager.dispose()
+
     }
 
 }
