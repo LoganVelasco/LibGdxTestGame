@@ -12,6 +12,10 @@ class ObstacleAvoidGame : Game() {
 
     val assetManager = AssetManager()
 
+
+
+
+
     override fun create() {
         Gdx.app.logLevel = Application.LOG_DEBUG
         assetManager.logger.level = Logger.DEBUG
