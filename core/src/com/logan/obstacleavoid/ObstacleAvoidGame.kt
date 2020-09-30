@@ -17,6 +17,8 @@ class ObstacleAvoidGame : Game() {
         assetManager.logger.level = Logger.DEBUG
 
         setScreen(LoadingScreen(this))
+
+
     }
 
     override fun dispose() {
