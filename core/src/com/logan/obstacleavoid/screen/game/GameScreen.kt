@@ -27,6 +27,7 @@ class GameScreen(val game: ObstacleAvoidGame) : Screen{
         controller = GameController()
         renderer = GameRenderer(controller, assetManager)
 
+
     }
 
     override fun render(delta: Float) {
