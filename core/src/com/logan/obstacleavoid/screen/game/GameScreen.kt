@@ -33,6 +33,7 @@ class GameScreen(val game: ObstacleAvoidGame) : Screen{
     override fun render(delta: Float) {
         controller.update(delta)
         renderer.render(delta)
+
     }
 
     override fun pause() {
